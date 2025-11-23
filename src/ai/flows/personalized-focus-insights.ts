@@ -74,18 +74,18 @@ const prompt = ai.definePrompt({
   name: 'personalizedFocusInsightsPrompt',
   input: {schema: PersonalizedFocusInsightsInputSchema},
   output: {schema: PersonalizedFocusInsightsOutputSchema},
-  prompt: `You are an AI assistant designed to provide personalized insights and recommendations to optimize focus and productivity.
-  Analyze the provided data, and provide insights to help the user improve their work habits.
+  prompt: `
+  You are an AI assistant designed to provide personalized insights.
 
   Data:
-  Daily Timeline Data: {{{JSON.stringify(dailyTimelineData)}}
-  Weekly Stamina Data: {{{JSON.stringify(weeklyStaminaData)}}}
-  Breakers Data: {{{JSON.stringify(breakersData)}}}
-  Triggers Data: {{{JSON.stringify(triggersData)}}}
-  User Level: {{{userLevel}}}
-  User XP: {{{userXP}}}
-  User HP: {{{userHP}}}
-  Tasks: {{{JSON.stringify(tasks)}}}
+  Daily Timeline Data: {{dailyTimelineData}}
+  Weekly Stamina Data: {{weeklyStaminaData}}
+  Breakers Data: {{breakersData}}
+  Triggers Data: {{triggersData}}
+  User Level: {{userLevel}}
+  User XP: {{userXP}}
+  User HP: {{userHP}}
+  Tasks: {{tasks}}
 
   Based on the data, provide a list of insights with the following fields:
   - id: A unique identifier for the insight.
