@@ -21,6 +21,13 @@ class BiometricRecord(models.Model):
     
     # ML output
     state_prediction = models.CharField(max_length=100, default="")
+    
+    # Gaze
+    gaze_x = models.FloatField(default=0)
+    gaze_y = models.FloatField(default=0)
+    screen_w = models.IntegerField(default=0)
+    screen_h = models.IntegerField(default=0)
+
 
     received_at = models.DateTimeField(auto_now_add=True)
 
@@ -45,3 +52,15 @@ class UserTask(models.Model):
 
     def __str__(self):
         return f"{self.timestamp} | {self.app} | {self.title}"
+    
+class GazeRecord(models.Model):
+    timestamp = models.DateTimeField()
+    gaze_x = models.FloatField()
+    gaze_y = models.FloatField()
+    screen_w = models.FloatField()
+    screen_h = models.FloatField()
+    received_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Gaze @ {self.timestamp}"
+

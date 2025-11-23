@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BiometricRecord, UserTask
+from .models import BiometricRecord, UserTask, GazeRecord
 
 @admin.register(UserTask)
 class UserTaskAdmin(admin.ModelAdmin):
@@ -22,3 +22,9 @@ class BiometricRecordAdmin(admin.ModelAdmin):
 
     list_filter = ("timestamp",)
     ordering = ("-timestamp",)
+    
+@admin.register(GazeRecord)
+class GazeRecordAdmin(admin.ModelAdmin):
+    list_display = ("id", "timestamp", "gaze_x", "gaze_y", "screen_w", "screen_h", "received_at")
+    list_filter = ("timestamp",)
+    search_fields = ("timestamp",)
