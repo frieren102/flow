@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Behavioral Stream Monitor</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Behavioral Data Monitor</h1>
+        <p>Typing & Mouse metrics sent to backend every 5s</p>
+      </header>
+
+      <main class="main">
+        <section class="card">
+          <h2>Last Payload</h2>
+          <div class="metrics">
+            <p><span>Mean IKI:</span> <span id="iki">0</span> ms</p>
+            <p><span>IKI Variance:</span> <span id="ikiVar">0</span></p>
+            <p><span>Backspace Rate:</span> <span id="backRate">0</span></p>
+            <p><span>Burstiness:</span> <span id="burst">0</span></p>
+            <p><span>Mouse Distance:</span> <span id="dist">0</span> px</p>
+            <p><span>Click Rate:</span> <span id="clickRate">0</span> /s</p>
+            <p><span>Idle Time:</span> <span id="idle">0</span> ms</p>
+            <p><span>Timestamp:</span> <span id="time">-</span></p>
+            <p><span>Backend Status:</span> <span id="status">-</span></p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Typing Area (for demo)</h2>
+          <p class="hint">
+            Type here to generate keystroke data. Move/click mouse inside this window.
+          </p>
+          <textarea id="typingArea" placeholder="Start typing..."></textarea>
+        </section>
+      </main>
+    </div>
+
+    <script src="ui.js"></script>
+  </body>
+</html>
