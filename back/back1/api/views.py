@@ -29,3 +29,12 @@ def biometric(request):
         return JsonResponse({"status": "ok", "id": record.id})
 
     return JsonResponse({"error": "GET not allowed"}, status=405)
+
+@csrf_exempt
+def biometric(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        print("Received from Go app:", data)
+        return JsonResponse({"status": "ok"})
+
+    return JsonResponse({"error": "only POST allowed"}, status=405)
