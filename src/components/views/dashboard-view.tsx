@@ -1,7 +1,8 @@
-import React, { Suspense } from 'react';
+'use client';
+
+import React, { useEffect, useState, Suspense } from 'react';
 import type { MainNavItem, FocusState } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
   Clock,
@@ -16,9 +17,7 @@ import {
   AlertCircle,
 } from '@/components/icons';
 import AiInsights from '@/components/shared/ai-insights';
-import { DAILY_TIMELINE_DATA } from '@/lib/data';
 import { cn } from '@/lib/utils';
-
 
 // Stat Card Component
 const StatCard = ({
@@ -29,7 +28,7 @@ const StatCard = ({
   trend,
 }: {
   title: string;
-  value: string;
+  value: string | number;
   subtext: string;
   icon: React.ElementType;
   trend?: number;
@@ -43,7 +42,7 @@ const StatCard = ({
       <div className="text-2xl font-bold">{value}</div>
       <div className="flex justify-between items-end">
         <p className="text-xs text-muted-foreground">{subtext}</p>
-        {trend && (
+        {trend !== undefined && (
           <span
             className={cn(
               'text-xs font-medium px-2 py-0.5 rounded-full',
@@ -77,7 +76,7 @@ const StatusBadge = ({ status }: { status: FocusState }) => {
     BREAK: Coffee,
   };
 
-  const Icon = icons[status] || Activity;
+  const Icon = icons[status] || Monitor;
   const isFlow = status === 'FLOW';
 
   return (
@@ -94,9 +93,8 @@ const StatusBadge = ({ status }: { status: FocusState }) => {
   );
 };
 
-
 // Timeline Segment Component
-const TimelineSegment = ({ data }: { data: { time: string; state: FocusState, duration: number } }) => {
+const TimelineSegment = ({ data }: { data: { time: string; state: FocusState; duration: number } }) => {
   const getColor = (state: FocusState) => {
     switch (state) {
       case 'FLOW': return 'bg-primary';
@@ -121,21 +119,83 @@ const TimelineSegment = ({ data }: { data: { time: string; state: FocusState, du
   );
 };
 
+interface LatestStateData {
+  timestamp: string;
+  mean_iki_ms: number;
+  variance_iki: number;
+  burstiness: number;
+  total_keys: number;
+  backspace_rate: number;
+  backspaces: number;
+  distance_px: number;
+  click_rate_per_sec: number;
+  mouse_clicks: number;
+  idle_time_ms: number;
+  state_prediction: string;
+}
 
 interface DashboardViewProps {
-  liveStatus: FocusState;
-  probData: { time: string; prob: number }[];
   setActiveTab: (tab: MainNavItem) => void;
 }
 
-export default function DashboardView({ liveStatus, probData, setActiveTab }: DashboardViewProps) {
-  const currentProbability = probData.length > 0 ? probData[probData.length - 1].prob : 0;
+export default function DashboardView({ setActiveTab }: DashboardViewProps) {
+  const [latestState, setLatestState] = useState<LatestStateData | null>(null);
+  const [timelineData, setTimelineData] = useState<{ time: string; state: FocusState; duration: number }[]>([]);
+
+  // Fetch latest state every 5 seconds
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchLatestState = async () => {
+      try {
+        const res = await fetch('/api/latest_state/');
+        if (!res.ok) throw new Error('Failed to fetch');
+        const data: LatestStateData = await res.json();
+        if (!isMounted) return;
+
+        setLatestState(data);
+
+        // Append to timeline (keep last 20 entries)
+        const newSegment = {
+          time: new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          state: data.state_prediction.toLowerCase() === 'flow' ? 'FLOW' :
+                 data.state_prediction.toLowerCase() === 'break' ? 'BREAK' :
+                 data.state_prediction.toLowerCase() === 'distracted' ? 'DISTRACTED' : 'NEUTRAL',
+          duration: 30 // fixed duration for visualization
+        };
+        setTimelineData(prev => [...prev.slice(-19), newSegment]);
+      } catch (err) {
+        console.error('Error fetching latest state:', err);
+      }
+    };
+
+    fetchLatestState();
+    const interval = setInterval(fetchLatestState, 5000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const liveStatus: FocusState = latestState
+    ? timelineData.length ? timelineData[timelineData.length - 1].state : 'NEUTRAL'
+    : 'NEUTRAL';
+
   const isFlow = liveStatus === 'FLOW';
+
+  // Cards values directly from API
+  const flowDuration = latestState ? Math.round((latestState.total_keys * latestState.mean_iki_ms) / 1000 / 60) : null;
+  const longestSession = latestState ? Math.round(latestState.burstiness / 1000 / 60) : null;
+  const distractions = latestState ? latestState.backspaces : null;
+  const smartBreaks = latestState ? Math.round(latestState.idle_time_ms / 1000 / 60) : null;
+  const currentProbability = latestState ? Math.min((1 - latestState.backspace_rate) * 100, 100) : 0;
 
   return (
     <div className="space-y-8 animate-in fade-in-0 slide-in-from-bottom-4 duration-500">
+
+      {/* Live Status Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Live Status */}
         <Card className="lg:col-span-2 shadow-lg relative overflow-hidden">
           <div className={cn(
             'absolute top-0 right-0 w-96 h-96 bg-primary/10 blur-3xl rounded-full transition-all duration-1000',
@@ -154,11 +214,11 @@ export default function DashboardView({ liveStatus, probData, setActiveTab }: Da
                 <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">Flow Probability</div>
                 <div className="flex items-end gap-2">
                   <span className="text-5xl font-light text-foreground">
-                    {(currentProbability * 100).toFixed(0)}
+                    {currentProbability.toFixed(0)}
                   </span>
                   <span className="text-xl text-muted-foreground mb-1">%</span>
                 </div>
-                <Progress value={currentProbability * 100} className="h-2 mt-3" />
+                <Progress value={currentProbability} className="h-2 mt-3" />
               </div>
               <div>
                 <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-1">System Actions</div>
@@ -204,13 +264,13 @@ export default function DashboardView({ liveStatus, probData, setActiveTab }: Da
           </Card>
         </div>
       </div>
-      
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Flow Duration" value="2h 15m" subtext="Goal: 4h" icon={Clock} trend={5} />
-        <StatCard title="Longest Session" value="48m" subtext="Best: 1h 10m" icon={Zap} trend={12} />
-        <StatCard title="Distractions" value="14" subtext="Blocked" icon={Shield} />
-        <StatCard title="Smart Breaks" value="3" subtext="Avg: 4.5/5" icon={Coffee} />
+        <StatCard title="Flow Duration" value={flowDuration ?? 'Loading...'} subtext="Goal: 4h" icon={Clock} trend={5} />
+        <StatCard title="Longest Session" value={longestSession ?? 'Loading...'} subtext="Best: 1h 10m" icon={Zap} trend={12} />
+        <StatCard title="Distractions" value={distractions ?? 'Loading...'} subtext="Blocked" icon={Shield} />
+        <StatCard title="Smart Breaks" value={smartBreaks ?? 'Loading...'} subtext="Avg: 4.5/5" icon={Coffee} />
       </div>
 
       {/* Timeline */}
@@ -230,7 +290,7 @@ export default function DashboardView({ liveStatus, probData, setActiveTab }: Da
         <CardContent>
           <div className="w-full bg-secondary rounded-lg p-2">
             <div className="h-12 flex items-center overflow-x-auto overflow-y-hidden">
-                {DAILY_TIMELINE_DATA.map((segment, i) => ( <TimelineSegment key={i} data={segment} /> ))}
+              {timelineData.map((segment, i) => <TimelineSegment key={i} data={segment} />)}
             </div>
           </div>
           <div className="flex justify-between mt-2 text-xs text-muted-foreground px-1 font-mono">
@@ -238,7 +298,8 @@ export default function DashboardView({ liveStatus, probData, setActiveTab }: Da
           </div>
         </CardContent>
       </Card>
-      
+
+      {/* AI Insights */}
       <Suspense fallback={<Card><CardContent>Loading AI Insights...</CardContent></Card>}>
         <AiInsights />
       </Suspense>

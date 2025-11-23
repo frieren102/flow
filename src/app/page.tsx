@@ -12,6 +12,7 @@ import AnalysisView from '@/components/views/analysis-view';
 import AmplificationView from '@/components/views/amplification-view';
 import TrendsView from '@/components/views/trends-view';
 import { TASKS_DATA } from '@/lib/data';
+import LiveFocusTree from '@/components/views/LiveTree';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<MainNavItem>('dashboard');
@@ -182,13 +183,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* <LiveFocusTree /> */}
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         isSimulationRunning={isSimulationRunning}
         toggleSimulation={toggleSimulation}
       />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Suspense fallback={<div>Loading...</div>}>
           {renderContent()}
         </Suspense>
